@@ -139,12 +139,10 @@ def prepare_view_count_model_data(features):
     
     potential_features = [
         'month', 'week_of_year', 'day_of_year', 'quarter',
-        
         'hours_viewed_lag1', 'hours_viewed_lag2', 'hours_viewed_lag3',
         'rank_lag1', 'rank_change', 'growth_rate',
         'country_count', 'country_count_lag1', 'country_growth',
         'Rating', 'cumulative_weeks_in_top_10',
-
         'rolling_avg_hours', 'acceleration', 'years_since_release', 'weeks_since_release'
     ]
 
@@ -154,7 +152,7 @@ def prepare_view_count_model_data(features):
     y = features[target_col]
 
     X = X.fillna(0)
-    
+
     return X, y
 
 def train_view_count_model(X, y):
@@ -163,24 +161,15 @@ def train_view_count_model(X, y):
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    
-
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
-    
-    
-
-    
-    
 
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
     rf_model.fit(X_train_scaled, y_train)
     rf_train_score = rf_model.score(X_train_scaled, y_train)
     rf_test_score = rf_model.score(X_test_scaled, y_test)
     
-    
-
     gb_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
     gb_model.fit(X_train_scaled, y_train)
     gb_train_score = gb_model.score(X_train_scaled, y_train)
@@ -191,16 +180,12 @@ def train_view_count_model(X, y):
     print(f"Gradient Boosting R² on training set: {gb_train_score:.4f}")
     print(f"Gradient Boosting R² on test set: {gb_test_score:.4f}")
     
-    
-
     if gb_test_score > rf_test_score:
         model = gb_model
         print("Using Gradient Boosting model")
     else:
         model = rf_model
         print("Using Random Forest model")
-    
-    
 
     feature_importance = pd.DataFrame({
         'Feature': X.columns,
@@ -230,8 +215,6 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
     if model is None or features.empty:
         return pd.DataFrame()
     
-    
-
     titles = features['show_title'].unique()
     
     all_predictions = []
@@ -240,26 +223,14 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
         week_predictions = []
         
         for title in titles:
-            
-
             title_data = features[features['show_title'] == title].sort_values('week_date').tail(3)
-            
             if title_data.empty:
                 continue
-            
-            
 
             X_pred = pd.DataFrame(index=[0])
-            
-            
-
             latest_data = title_data.iloc[-1]
             
-            
-
             if week_idx == 0:
-                
-
                 for col in model['features']:
                     if col in latest_data:
                         X_pred[col] = latest_data[col]
@@ -273,8 +244,6 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
                         X_pred[col] = (week.month - 1) // 3 + 1
                     else:
                         X_pred[col] = 0
-                
-                
 
                 if 'hours_viewed_lag1' in model['features']:
                     X_pred['hours_viewed_lag1'] = latest_data['weekly_hours_viewed']
@@ -285,18 +254,13 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
                 if 'hours_viewed_lag3' in model['features'] and len(title_data) >= 3:
                     X_pred['hours_viewed_lag3'] = title_data.iloc[-3]['weekly_hours_viewed']
             
-            
-
             else:
-                
 
                 first_week_pred = next(
                     (p for p in all_predictions if p['show_title'] == title and p['week'] == prediction_weeks[0]),
                     None
                 )
-                
-                
-
+    
                 if first_week_pred:
                     for col in model['features']:
                         if col == 'hours_viewed_lag1':
@@ -318,25 +282,16 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
                         else:
                             X_pred[col] = 0
                 else:
-                    
-
                     continue
-            
-            
 
             X_pred = X_pred.fillna(0)
-            
-            
 
             for col in model['features']:
                 if col not in X_pred.columns:
                     X_pred[col] = 0
-            
-            
 
             X_pred_scaled = model['scaler'].transform(X_pred)
             predicted_hours = max(0, model['model'].predict(X_pred_scaled)[0])  
-
             
             week_predictions.append({
                 'show_title': title,
@@ -347,32 +302,18 @@ def predict_category_view_counts(model, features, category, prediction_weeks):
                 'weeks_in_top_10': latest_data['cumulative_weeks_in_top_10'] if 'cumulative_weeks_in_top_10' in latest_data else None
             })
         
-        
-
         week_predictions.sort(key=lambda x: x['predicted_hours'], reverse=True)
-        
-        
-
         top_10 = week_predictions[:10]
-        
-        
-
         all_predictions.extend(top_10)
     
     return pd.DataFrame(all_predictions)
 
 def visualize_view_count_predictions(movies_predictions, tv_predictions):
-    
-
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
-    
-    
 
     if not movies_predictions.empty:
         next_week_movies = movies_predictions[movies_predictions['week'] == movies_predictions['week'].min()]
         next_week_movies = next_week_movies.sort_values('predicted_hours', ascending=False).head(10)
-        
-        
 
         next_week_movies['hours_in_millions'] = next_week_movies['predicted_hours'] / 1_000_000
         
@@ -380,14 +321,10 @@ def visualize_view_count_predictions(movies_predictions, tv_predictions):
         ax1.set_title('Predicted Top 10 Movies for Next Week')
         ax1.set_xlabel('Predicted Hours Viewed (millions)')
         ax1.set_ylabel('')
-    
-    
 
     if not tv_predictions.empty:
         next_week_tv = tv_predictions[tv_predictions['week'] == tv_predictions['week'].min()]
         next_week_tv = next_week_tv.sort_values('predicted_hours', ascending=False).head(10)
-        
-        
 
         next_week_tv['hours_in_millions'] = next_week_tv['predicted_hours'] / 1_000_000
         
