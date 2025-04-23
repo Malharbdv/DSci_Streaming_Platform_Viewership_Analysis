@@ -7,14 +7,23 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def load_data():
+def load_data(date):
     global_data = pd.read_csv("global_clamped.csv")
     country_data = pd.read_csv("countries_clamped.csv")
     watch_time_data = pd.read_csv("cleaned.csv")
+    
+    global_data['week'] = pd.to_datetime(global_data['week'])
+    country_data['week'] = pd.to_datetime(country_data['week'])
+    
+    global_data = global_data.sort_values('week')
+    country_data = country_data.sort_values('week')
+    
+    global_data = global_data[global_data['week'] < date]
+    country_data = country_data[country_data['week'] < date]
+    
     return global_data, country_data, watch_time_data
 
 def preprocess_data(global_data, country_data, watch_time_data):
-    
 
     global_data['week_date'] = pd.to_datetime(global_data['week'])
     country_data['week_date'] = pd.to_datetime(country_data['week'])
@@ -198,8 +207,6 @@ def train_view_count_model(X, y):
     return {'model': model, 'scaler': scaler, 'features': X.columns}
 
 def predict_view_counts(movies_model, tv_model, movies_features, tv_features, global_data):
-    
-
     max_week = global_data['week_date'].max()
     next_week = max_week + timedelta(days=7)
     second_week = max_week + timedelta(days=14)
@@ -339,9 +346,9 @@ def visualize_view_count_predictions(movies_predictions, tv_predictions):
     
     return fig
 
-def main():
+def main(date):
     print("Loading data...")
-    global_data, country_data, watch_time_data = load_data()
+    global_data, country_data, watch_time_data = load_data(date)
     
     print("Preprocessing data...")
     movies_features, tv_features = preprocess_data(global_data, country_data, watch_time_data)
@@ -351,8 +358,6 @@ def main():
     
     print("Generating predictions...")
     movies_predictions, tv_predictions = predict_view_counts(movies_model, tv_model, movies_features, tv_features, global_data)
-    
-    
 
     print("\nPredicted Top 10 Movies for Next Week (by hours viewed):")
     if not movies_predictions.empty:
@@ -364,6 +369,7 @@ def main():
         second_week = movies_predictions['week'].max()
         movies_second_week = movies_predictions[movies_predictions['week'] == second_week].sort_values('predicted_hours', ascending=False).head(10)
         print(movies_second_week[['show_title', 'predicted_hours']])
+    
     else:
         print("No movie predictions generated. Check if weekly_hours_viewed data is available.")
     
@@ -380,11 +386,6 @@ def main():
     else:
         print("No TV show predictions generated. Check if weekly_hours_viewed data is available.")
     
-    
-
-    visualize_view_count_predictions(movies_predictions, tv_predictions)
+    # visualize_view_count_predictions(movies_predictions, tv_predictions)
     
     return movies_predictions, tv_predictions
-
-if __name__ == "__main__":
-    movies_predictions, tv_predictions = main()
