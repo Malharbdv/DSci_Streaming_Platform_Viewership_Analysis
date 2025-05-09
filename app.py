@@ -28,7 +28,7 @@ def predict_top_10(date, country):
         return pd.DataFrame(), pd.DataFrame()
 
     if country.lower() == 'global' or country == '':
-        movies_predictions, tv_predictions = main(date)
+        movies_predictions, tv_predictions = predict_global_rank(date)
         return pd.DataFrame(movies_predictions), pd.DataFrame(tv_predictions)
     
     elif country not in COUNTRIES:

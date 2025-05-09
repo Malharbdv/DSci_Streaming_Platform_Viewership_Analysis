@@ -24,7 +24,6 @@ def load_data(date):
     return global_data, country_data, watch_time_data
 
 def preprocess_data(global_data, country_data, watch_time_data):
-
     global_data['week_date'] = pd.to_datetime(global_data['week'])
     country_data['week_date'] = pd.to_datetime(country_data['week'])
 
@@ -32,7 +31,6 @@ def preprocess_data(global_data, country_data, watch_time_data):
         print("Warning: No weekly_hours_viewed column found in global data.")
         return pd.DataFrame(), pd.DataFrame()
     
-
     global_data['year'] = global_data['week_date'].dt.year
     global_data['month'] = global_data['week_date'].dt.month
     global_data['week_of_year'] = global_data['week_date'].dt.isocalendar().week
@@ -73,7 +71,6 @@ def create_view_count_features(data, country_data, watch_time_data):
         
         title_country_data = country_data[country_data['show_title'] == title]
         if not title_country_data.empty:
-            
             country_counts = title_country_data.groupby('week')['country_name'].count().reset_index()
             country_counts.columns = ['week', 'country_count']
             title_features = pd.merge(title_features, country_counts, on='week', how='left')
@@ -89,7 +86,6 @@ def create_view_count_features(data, country_data, watch_time_data):
         if not watch_time_data.empty:
             watch_time_title = watch_time_data[watch_time_data['Title'] == title]
             if not watch_time_title.empty:
-                
                 selected_columns = ['Title', 'Hours Viewed', 'Rating', 'Release Year', 'Genre']
                 available_columns = [col for col in selected_columns if col in watch_time_title.columns]
                 
@@ -125,7 +121,6 @@ def create_view_count_features(data, country_data, watch_time_data):
         return pd.DataFrame()
 
 def train_models(movies_features, tv_features):
-    
     X_movies, y_movies = prepare_view_count_model_data(movies_features)
     if not X_movies.empty:
         movies_model = train_view_count_model(X_movies, y_movies)
@@ -346,7 +341,7 @@ def visualize_view_count_predictions(movies_predictions, tv_predictions):
     
     return fig
 
-def main(date):
+def predict_global_rank(date):
     print("Loading data...")
     global_data, country_data, watch_time_data = load_data(date)
     
